@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Word → PDF{% endblock %}
+
+{% block content %}
+<h5>Word → PDF</h5>
+<form id="convert-form">
+    {% csrf_token %}
+    <div id="drop-area" class="border p-4 text-center mb-3">
+        Drag & drop Word file here or click to select
+        <input type="file" id="fileElem" accept=".docx" hidden>
+    </div>
+    <button class="btn btn-primary w-100">Convert to PDF</button>
+</form>
+
+<script>
+let uploadedFile = null
+const dropArea = document.getElementById("drop-area")
+const fileElem = document.getElementById("fileElem")
+
+dropArea.onclick = () => fileElem.click()
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light") }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light")
+dropArea.ondrop = e => {
+    e.preventDefault()
+    dropArea.classList.remove("bg-light")
+    uploadedFile = e.dataTransfer.files[0]
+}
+fileElem.onchange = e => uploadedFile = e.target.files[0]
+
+document.getElementById("convert-form").onsubmit = async e => {
+    e.preventDefault()
+    if(!uploadedFile) return
+
+    const fd = new FormData()
+    fd.append("file", uploadedFile)
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    const res = await fetch("", {
+        method:"POST",
+        headers:{ "X-CSRFToken": csrf },
+        body: fd
+    })
+
+    if(!res.ok){ alert("Conversion failed"); return }
+
+    const blob = await res.blob()
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(blob)
+    a.download = uploadedFile.name.replace(".docx",".pdf")
+    a.click()
+}
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}VetriFiles – PDF Tools{% endblock %}
+
+{% block content %}
+
+<h2 class="fw-bold text-center mb-2">Every tool you need to work with PDFs</h2>
+<p class="text-center text-muted mb-5">
+  Merge, split, compress, convert, and edit PDFs online
+</p>
+<div class="row">
+{% for tool in tools %}
+  <div class="col-md-3 mb-4 text-center">
+    <a href="{{ tool.url }}" class="text-decoration-none text-dark">
+      <lord-icon
+        src="{{ tool.icon }}"
+        trigger="hover"
+        colors="primary:#0d6efd"
+        style="width:90px;height:90px">
+      </lord-icon>
+
+      <h6 class="mt-2">{{ tool.name }}</h6>
+      <small class="text-muted">{{ tool.desc }}</small>
+    </a>
+  </div>
+{% endfor %}
+</div>
+
+
+{% endblock %}

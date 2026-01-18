@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Split PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- PDF Preview -->
+    <div class="col-md-6">
+        <h5>PDF Preview</h5>
+        <div id="pdf-preview" class="border p-2" style="height:400px; overflow-y:auto; background:#f8f9fa;"></div>
+    </div>
+
+    <!-- Split Controls -->
+    <div class="col-md-6">
+        <h5>Split PDF</h5>
+
+        <form id="split-form">
+            {% csrf_token %}
+
+            <!-- Drag & Drop / File Select -->
+            <div id="drop-area" class="border p-4 text-center mb-3">
+                Drag & drop PDF here or click to select
+                <input type="file" id="fileElem" accept="application/pdf" hidden>
+            </div>
+            
+            <!-- Ranges -->
+            <div id="ranges-container" class="mb-3"></div>
+            <button type="button" class="btn btn-sm btn-secondary mb-3" id="add-range">Add Range</button>
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn-primary w-100">Split PDF</button>
+        </form>
+    </div>
+</div>
+
+<script>
+let pdfDoc = null
+let uploadedFile = null
+
+const previewContainer = document.getElementById("pdf-preview")
+const fileElem = document.getElementById("fileElem")
+const dropArea = document.getElementById("drop-area")
+const rangesContainer = document.getElementById("ranges-container")
+
+// Drag & Drop + Click
+dropArea.onclick = () => fileElem.click()
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light") }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light")
+dropArea.ondrop = e => { e.preventDefault(); dropArea.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0]) }
+fileElem.onchange = e => handleFile(e.target.files[0])
+
+function handleFile(file){
+    if(!file || file.type !== "application/pdf") return
+    uploadedFile = file
+    previewContainer.innerHTML = ""
+    rangesContainer.innerHTML = ""
+    addRange(1,1)
+    loadPDF(file)
+}
+
+function loadPDF(file){
+    file.arrayBuffer().then(data => {
+        pdfjsLib.getDocument({data}).promise.then(doc => {
+            pdfDoc = doc
+            renderAllPages()
+        })
+    })
+}
+
+async function renderAllPages(){
+    previewContainer.innerHTML = ""
+    for(let i=1; i<=pdfDoc.numPages; i++){
+        const page = await pdfDoc.getPage(i)
+        const viewport = page.getViewport({scale:1.1})
+        const canvas = document.createElement("canvas")
+        canvas.className = "mb-3 shadow-sm bg-white"
+        const ctx = canvas.getContext("2d")
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        previewContainer.appendChild(canvas)
+        await page.render({canvasContext: ctx, viewport}).promise
+    }
+}
+
+// Ranges
+function addRange(from=1,to=1){
+    const div = document.createElement("div")
+    div.className = "mb-2 d-flex gap-2 align-items-center"
+    div.innerHTML = `
+        <input type="number" class="form-control from" min="1" value="${from}">
+        <span>to</span>
+        <input type="number" class="form-control to" min="1" value="${to}">
+    `
+    rangesContainer.appendChild(div)
+}
+document.getElementById("add-range").onclick = () => addRange()
+
+// Submit + Download with page numbers
+document.getElementById("split-form").onsubmit = async e => {
+    e.preventDefault()
+    if(!uploadedFile || !pdfDoc) return
+
+    const ranges = []
+    document.querySelectorAll("#ranges-container div").forEach(r=>{
+        ranges.push({
+            from: r.querySelector(".from").value,
+            to: r.querySelector(".to").value
+        })
+    })
+
+    const fd = new FormData()
+    fd.append("pdf", uploadedFile)
+    fd.append("ranges", JSON.stringify(ranges))
+
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    const res = await fetch("",{
+        method:"POST",
+        headers:{ "X-CSRFToken": csrf },
+        body: fd
+    })
+
+    if(!res.ok){ alert("Split failed"); return }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+
+    const rangesText = ranges.map(r=>`${r.from}-${r.to}`).join("_")
+    const filename = uploadedFile.name.replace(".pdf", `_${rangesText}_split.pdf`)
+
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+    a.click()
+}
+</script>
+{% endblock %}

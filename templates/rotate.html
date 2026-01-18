@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Rotate PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- PDF PREVIEW -->
+    <div class="col-md-6">
+        <h5>PDF Preview</h5>
+        <div id="pdf-preview" class="border p-2"
+             style="height:400px; overflow-y:auto; background:#f8f9fa;"></div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="col-md-6">
+        <h5>Rotate PDF</h5>
+
+        <form id="rotate-form">
+            {% csrf_token %}
+
+            <div id="drop-area" class="border p-4 text-center mb-3">
+                Drag & drop PDF here or click to select
+                <input type="file" id="fileElem" accept="application/pdf" hidden>
+            </div>
+
+            <label class="fw-semibold mb-2">Rotation Angle</label>
+            <select id="rotation" class="form-select mb-3">
+                <option value="90">Rotate 90° clockwise</option>
+                <option value="180">Rotate 180°</option>
+                <option value="270">Rotate 270° clockwise</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary w-100">
+                Rotate PDF
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+let uploadedFile = null
+let pdfDoc = null
+
+const preview = document.getElementById("pdf-preview")
+const fileElem = document.getElementById("fileElem")
+const dropArea = document.getElementById("drop-area")
+
+dropArea.onclick = () => fileElem.click()
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light") }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light")
+dropArea.ondrop = e => {
+    e.preventDefault()
+    dropArea.classList.remove("bg-light")
+    handleFile(e.dataTransfer.files[0])
+}
+fileElem.onchange = e => handleFile(e.target.files[0])
+
+function handleFile(file){
+    if(!file || file.type !== "application/pdf") return
+    uploadedFile = file
+    preview.innerHTML = ""
+    loadPDF(file)
+}
+
+function loadPDF(file){
+    file.arrayBuffer().then(data=>{
+        pdfjsLib.getDocument({data}).promise.then(doc=>{
+            pdfDoc = doc
+            renderPages()
+        })
+    })
+}
+
+async function renderPages(){
+    preview.innerHTML=""
+    for(let i=1;i<=pdfDoc.numPages;i++){
+        const page = await pdfDoc.getPage(i)
+        const vp = page.getViewport({scale:1.1})
+        const canvas = document.createElement("canvas")
+        canvas.className="mb-3 shadow-sm bg-white"
+        canvas.width=vp.width
+        canvas.height=vp.height
+        await page.render({
+            canvasContext:canvas.getContext("2d"),
+            viewport:vp
+        }).promise
+        preview.appendChild(canvas)
+    }
+}
+
+document.getElementById("rotate-form").onsubmit = async e=>{
+    e.preventDefault()
+    if(!uploadedFile) return
+
+    const fd = new FormData()
+    fd.append("pdf", uploadedFile)
+    fd.append("rotation", document.getElementById("rotation").value)
+
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    const res = await fetch("",{
+        method:"POST",
+        headers:{ "X-CSRFToken": csrf },
+        body: fd
+    })
+
+    if(!res.ok){ alert("Rotation failed"); return }
+
+    const blob = await res.blob()
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(blob)
+    a.download = uploadedFile.name.replace(".pdf","_rotated.pdf")
+    a.click()
+}
+</script>
+{% endblock %}

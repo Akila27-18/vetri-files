@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}PowerPoint to PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- PREVIEW -->
+    <div class="col-md-6">
+        <h5>PowerPoint Preview</h5>
+        <div class="border p-4 text-center bg-light"
+             style="height:400px;">
+            <p class="text-muted">
+                Preview not available for PowerPoint files
+            </p>
+        </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="col-md-6">
+        <h5>PowerPoint → PDF</h5>
+
+        <form id="convert-form">
+            {% csrf_token %}
+
+            <div id="drop-area" class="border p-4 text-center mb-3">
+                Drag & drop PPT / PPTX here or click to select
+                <input type="file" id="fileElem"
+                       accept=".ppt,.pptx" hidden>
+            </div>
+
+            <button class="btn btn-danger w-100">
+                Convert to PDF
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+let uploadedFile=null
+const fileElem=document.getElementById("fileElem")
+const dropArea=document.getElementById("drop-area")
+
+dropArea.onclick=()=>fileElem.click()
+dropArea.ondragover=e=>{e.preventDefault();dropArea.classList.add("bg-light")}
+dropArea.ondragleave=()=>dropArea.classList.remove("bg-light")
+dropArea.ondrop=e=>{
+    e.preventDefault()
+    dropArea.classList.remove("bg-light")
+    handleFile(e.dataTransfer.files[0])
+}
+fileElem.onchange=e=>handleFile(e.target.files[0])
+
+function handleFile(file){
+    if(!file) return
+    uploadedFile=file
+}
+
+document.getElementById("convert-form").onsubmit=async e=>{
+    e.preventDefault()
+    if(!uploadedFile) return
+
+    const fd=new FormData()
+    fd.append("ppt",uploadedFile)
+
+    const csrf=document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    const res=await fetch("",{
+        method:"POST",
+        headers:{ "X-CSRFToken":csrf },
+        body:fd
+    })
+
+    if(!res.ok){
+        alert("Conversion failed")
+        return
+    }
+
+    const blob=await res.blob()
+    const a=document.createElement("a")
+    a.href=URL.createObjectURL(blob)
+    a.download=uploadedFile.name.replace(/\.(ppt|pptx)$/,".pdf")
+    a.click()
+}
+</script>
+{% endblock %}

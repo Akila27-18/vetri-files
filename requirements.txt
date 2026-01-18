@@ -1,0 +1,22 @@
+# Core PDF tools
+PyPDF2
+pdf2image
+pytesseract
+
+# Word ↔ PDF
+python-docx
+docx2pdf
+pdf2docx
+
+# Excel ↔ PDF
+pandas
+openpyxl
+tabula-py
+pdfkit
+
+# PowerPoint ↔ PDF
+python-pptx
+
+# Utilities / optional
+numpy
+ninja

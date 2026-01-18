@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}PDF → PowerPoint{% endblock %}
+
+{% block content %}
+<h5>Convert PDF to PowerPoint</h5>
+<form id="convert-form">
+    {% csrf_token %}
+    <div id="drop-area" class="border p-4 text-center mb-3">
+        Drag & drop PDF here or click to select
+        <input type="file" id="fileElem" accept="application/pdf" hidden>
+    </div>
+    <button class="btn btn-primary w-100">Convert to PowerPoint</button>
+</form>
+<p id="file-info">No file selected</p>
+
+<script>
+let uploadedFile = null
+const dropArea = document.getElementById("drop-area")
+const fileElem = document.getElementById("fileElem")
+const fileInfo = document.getElementById("file-info")
+
+dropArea.onclick = () => fileElem.click()
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light") }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light")
+dropArea.ondrop = e => { e.preventDefault(); dropArea.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0]) }
+fileElem.onchange = e => handleFile(e.target.files[0])
+
+function handleFile(file){
+    if(!file || file.type !== "application/pdf") return
+    uploadedFile = file
+    fileInfo.innerHTML = `<strong>Selected:</strong> ${file.name} (${Math.round(file.size/1024)} KB)`
+}
+
+document.getElementById("convert-form").onsubmit = async e => {
+    e.preventDefault()
+    if(!uploadedFile) return
+
+    const fd = new FormData()
+    fd.append("file", uploadedFile)
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    const res = await fetch("", { method:"POST", headers:{ "X-CSRFToken": csrf }, body: fd })
+    if(!res.ok){ alert("Conversion failed"); return }
+
+    const blob = await res.blob()
+    const a = document.createElement("a")
+    a.href = URL.createObjectURL(blob)
+    a.download = uploadedFile.name.replace(".pdf",".pptx")
+    a.click()
+}
+</script>
+{% endblock %}

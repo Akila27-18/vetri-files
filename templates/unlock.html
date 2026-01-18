@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Unlock PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- PDF PREVIEW -->
+    <div class="col-md-6">
+        <h5>PDF Preview</h5>
+        <div id="pdf-preview"
+             class="border p-2"
+             style="height:400px; overflow-y:auto; background:#f8f9fa;"></div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="col-md-6">
+        <h5>Unlock PDF</h5>
+
+        <form id="unlock-form">
+            {% csrf_token %}
+
+            <div id="drop-area" class="border p-4 text-center mb-3">
+                Drag & drop PDF here or click to select
+                <input type="file" id="fileElem"
+                       accept="application/pdf" hidden>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">PDF Password</label>
+                <input type="password" id="password"
+                       class="form-control"
+                       placeholder="Enter PDF password">
+            </div>
+
+            <button class="btn btn-primary w-100">
+                Unlock PDF
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+let uploadedFile=null
+let pdfDoc=null
+
+const preview=document.getElementById("pdf-preview")
+const fileElem=document.getElementById("fileElem")
+const dropArea=document.getElementById("drop-area")
+
+dropArea.onclick=()=>fileElem.click()
+dropArea.ondragover=e=>{e.preventDefault();dropArea.classList.add("bg-light")}
+dropArea.ondragleave=()=>dropArea.classList.remove("bg-light")
+dropArea.ondrop=e=>{
+    e.preventDefault()
+    dropArea.classList.remove("bg-light")
+    handleFile(e.dataTransfer.files[0])
+}
+fileElem.onchange=e=>handleFile(e.target.files[0])
+
+function handleFile(file){
+    if(!file || file.type!=="application/pdf") return
+    uploadedFile=file
+    preview.innerHTML=""
+    loadPDF(file)
+}
+
+function loadPDF(file){
+    file.arrayBuffer().then(data=>{
+        pdfjsLib.getDocument({
+            data,
+            password: document.getElementById("password").value
+        }).promise.then(doc=>{
+            pdfDoc=doc
+            renderPages()
+        }).catch(()=>{
+            preview.innerHTML="<p class='text-danger'>Password required to preview</p>"
+        })
+    })
+}
+
+async function renderPages(){
+    for(let i=1;i<=pdfDoc.numPages;i++){
+        const page=await pdfDoc.getPage(i)
+        const vp=page.getViewport({scale:1})
+        const canvas=document.createElement("canvas")
+        canvas.className="mb-3 shadow-sm bg-white"
+        canvas.width=vp.width
+        canvas.height=vp.height
+        await page.render({
+            canvasContext:canvas.getContext("2d"),
+            viewport:vp
+        }).promise
+        preview.appendChild(canvas)
+    }
+}
+
+document.getElementById("unlock-form").onsubmit=async e=>{
+    e.preventDefault()
+    const password=document.getElementById("password").value
+    if(!uploadedFile || !password) return
+
+    const fd=new FormData()
+    fd.append("pdf",uploadedFile)
+    fd.append("password",password)
+
+    const csrf=document.querySelector('[name=csrfmiddlewaretoken]').value
+
+    const res=await fetch("",{
+        method:"POST",
+        headers:{ "X-CSRFToken":csrf },
+        body:fd
+    })
+
+    if(!res.ok){
+        alert("Wrong password or unlock failed")
+        return
+    }
+
+    const blob=await res.blob()
+    const a=document.createElement("a")
+    a.href=URL.createObjectURL(blob)
+    a.download=uploadedFile.name.replace(".pdf","_unlocked.pdf")
+    a.click()
+}
+</script>
+{% endblock %}
