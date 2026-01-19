@@ -128,6 +128,8 @@ GOOGLE_CLIENT_ID = "705606912042-si979oeunvtl2s6ipteuf5r87spd6ube.apps.googleuse
 GOOGLE_API_KEY = "AIzaSyACGjKS3I3eN-SJtWnvKZiZNIfQab53cFo"
 
 
+GS_PATH = os.environ.get("GS_PATH", "gs")
+
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"

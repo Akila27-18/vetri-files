@@ -12,6 +12,9 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
+from django.conf import settings
+
+GS_PATH = settings.GS_PATH
 
 
 # ===============================
