@@ -81,28 +81,50 @@ def split_pdf(request):
 
     return render(request, "split.html")
 
+import io
+import os
+from PyPDF2 import PdfReader, PdfWriter
+from django.http import HttpResponse
+from django.shortcuts import render
 
 # ===============================
-# COMPRESS PDF (Ghostscript)
+# COMPRESS PDF (Render-safe)
 # ===============================
 def compress_pdf(request):
     if request.method == "POST":
-        GS_PATH = r"C:\Program Files\gs\gs10.06.0\bin\gswin64c.exe"
-        pdf = request.FILES.get("pdf")
+        pdf_file = request.FILES.get("pdf")
+        level = request.POST.get("level", "recommended")
 
-        with tempfile.TemporaryDirectory() as tmp:
-            in_p = os.path.join(tmp, "in.pdf")
-            out_p = os.path.join(tmp, "out.pdf")
-            open(in_p, "wb").write(pdf.read())
+        if not pdf_file:
+            return HttpResponse("No PDF uploaded", status=400)
 
-            subprocess.run([
-                GS_PATH, "-sDEVICE=pdfwrite",
-                "-dPDFSETTINGS=/ebook",
-                "-dNOPAUSE", "-dBATCH",
-                f"-sOutputFile={out_p}", in_p
-            ], check=True)
+        reader = PdfReader(pdf_file)
+        writer = PdfWriter()
 
-            return HttpResponse(open(out_p, "rb").read(), content_type="application/pdf")
+        # Compression levels
+        compress = {
+            "extreme": True,
+            "recommended": True,
+            "less": False
+        }.get(level, True)
+
+        for page in reader.pages:
+            if compress:
+                page.compress_content_streams()
+            writer.add_page(page)
+
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
+
+        filename = os.path.splitext(pdf_file.name)[0] + "_compressed.pdf"
+
+        response = HttpResponse(
+            buffer.read(),
+            content_type="application/pdf"
+        )
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
     return render(request, "compress.html")
 

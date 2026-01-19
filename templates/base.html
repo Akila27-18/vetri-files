@@ -187,6 +187,13 @@
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
 </script>
+<!-- PDF.JS (CDN – Render Safe) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
+
 <script>
 const searchInput = document.querySelector('input[type="search"]');
 
