@@ -3,27 +3,30 @@
 
 {% block content %}
 
-<h2 class="fw-bold text-center mb-2">Every tool you need to work with PDFs</h2>
-<p class="text-center text-muted mb-5">
-  Merge, split, compress, convert, and edit PDFs online
-</p>
-<div class="row">
-{% for tool in tools %}
-  <div class="col-md-3 mb-4 text-center">
-    <a href="{{ tool.url }}" class="text-decoration-none text-dark">
-      <lord-icon
-        src="{{ tool.icon }}"
-        trigger="hover"
-        colors="primary:#0d6efd"
-        style="width:90px;height:90px">
-      </lord-icon>
+<h2 class="fw-bold text-center mb-2">
+    Every tool you need to work with PDFs
+</h2>
 
-      <h6 class="mt-2">{{ tool.name }}</h6>
-      <small class="text-muted">{{ tool.desc }}</small>
-    </a>
-  </div>
+<p class="text-center text-muted mb-5">
+    Merge, split, compress, convert, and edit PDFs online
+</p>
+
+<div class="row justify-content-center">
+{% for tool in tools %}
+    <div class="col-6 col-md-3 mb-4 text-center">
+        <a href="{{ tool.url }}" class="text-decoration-none text-dark d-block p-3 rounded hover-shadow">
+            <lord-icon
+                src="{{ tool.icon }}"
+                trigger="hover"
+                colors="primary:#0d6efd"
+                style="width:80px;height:80px">
+            </lord-icon>
+
+            <h6 class="mt-3 mb-1">{{ tool.name }}</h6>
+            <small class="text-muted">{{ tool.desc }}</small>
+        </a>
+    </div>
 {% endfor %}
 </div>
-
 
 {% endblock %}

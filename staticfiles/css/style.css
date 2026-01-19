@@ -1,37 +1,132 @@
+/* ===============================
+   GLOBAL
+================================ */
 body {
-    background-color: #f8f9fa;
+    background: linear-gradient(135deg, #f0f4ff, #e2e8f0); /* soft gradient */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #212529;
+    min-height: 100vh;
 }
+
+a {
+    text-decoration: none;
+}
+
+/* ===============================
+   CATEGORY HEADERS (GRADIENT)
+================================ */
+.category-title {
+    font-weight: 700;
+    letter-spacing: .3px;
+    margin-bottom: 18px;
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 999px;
+    color: #1e293b;
+    background: linear-gradient(
+        90deg,
+        rgba(37,99,235,0.15),
+        rgba(79,70,229,0.15)
+    );
+}
+
+/* ===============================
+   TOOL CARDS
+================================ */
 .tool-card {
-    background: white;
+    display: block;
+    background: #ffffff; /* keep white cards for contrast */
     border-radius: 16px;
-    padding: 24px;
+    padding: 30px 18px;
     text-align: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-    transition: all 0.25s ease;
+    color: #000;
+    box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    transition: transform .25s ease, box-shadow .25s ease;
     height: 100%;
+    transform-style: preserve-3d;
+    perspective: 1000px;
 }
 
 .tool-card:hover {
     transform: translateY(-6px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    box-shadow: 0 12px 30px rgba(0,0,0,.12);
 }
 
-.tool-card .icon {
-    font-size: 38px;
+.tool-card lord-icon {
+    width: 80px;
+    height: 80px;
 }
 
+.tool-card h6 {
+    margin-top: 14px;
+    font-weight: 600;
+}
+
+.tool-card small {
+    color: #6b7280;
+}
+
+/* ===============================
+   SMART HOVER TILT (DESKTOP)
+================================ */
+@media (hover: hover) {
+    .tool-card:hover {
+        will-change: transform;
+    }
+}
+
+/* ===============================
+   SKELETON LOADERS
+================================ */
+.tool-skeleton {
+    height: 200px;
+    border-radius: 16px;
+    background: linear-gradient(
+        100deg,
+        #e5e7eb 40%,
+        #f1f5f9 50%,
+        #e5e7eb 60%
+    );
+    background-size: 200% 100%;
+    animation: skeleton 1.3s infinite linear;
+}
+
+@keyframes skeleton {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+/* ===============================
+   DRAG & DROP
+================================ */
 #drop-area {
-    border: 2px dashed #ccc;
-    border-radius: 12px;
+    border: 2px dashed #6366f1; /* purple-blue accent */
+    border-radius: 14px;
     cursor: pointer;
+    transition: background .2s ease, border-color .2s ease;
+    background: rgba(255,255,255,0.6);
 }
 
+#drop-area:hover {
+    background: rgba(247,250,255,0.9);
+    border-color: #4f46e5;
+}
+
+/* ===============================
+   FILE LIST (SORTABLE)
+================================ */
 #file-list li {
     cursor: grab;
 }
+
 #file-list li:active {
     cursor: grabbing;
 }
+
+/* ===============================
+   MEGA MENU
+================================ */
 .mega-menu {
     width: 100%;
 }
@@ -40,15 +135,19 @@ body {
     display: flex;
     gap: 12px;
     align-items: center;
-    padding: 8px;
-    border-radius: 8px;
+    padding: 10px;
+    border-radius: 10px;
     text-decoration: none;
     color: #212529;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: background .2s ease, transform .2s ease;
 }
 
 .mega-item:hover {
-    background: #f1f5ff;
+    background: linear-gradient(
+        90deg,
+        rgba(37,99,235,.08),
+        rgba(79,70,229,.08)
+    );
     transform: translateX(4px);
 }
 
@@ -56,19 +155,61 @@ body {
     width: 32px;
     height: 32px;
 }
-.tool-card {
-    display: block;
-    text-align: center;
-    padding: 30px 15px;
-    background: white;
-    border-radius: 16px;
-    text-decoration: none;
-    color: #000;
-    box-shadow: 0 6px 20px rgba(0,0,0,.06);
-    transition: transform .25s ease, box-shadow .25s ease;
+
+/* ===============================
+   NAVBAR
+================================ */
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: .3px;
 }
 
-.tool-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 30px rgba(0,0,0,.12);
+/* ===============================
+   BUTTON POLISH
+================================ */
+.btn {
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    border: none;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.05);
+}
+
+/* ===============================
+   FOOTER
+================================ */
+footer {
+    font-size: 14px;
+}
+
+/* ===============================
+   MOBILE FIRST REFINEMENTS
+================================ */
+@media (max-width: 768px) {
+    .tool-card {
+        padding: 22px 14px;
+        border-radius: 14px;
+    }
+
+    .tool-card lord-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .mega-menu {
+        border-radius: 0;
+    }
+}
+
+/* Disable hover tilt on touch devices */
+@media (hover: none) {
+    .tool-card {
+        transform: none !important;
+    }
 }

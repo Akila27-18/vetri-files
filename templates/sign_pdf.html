@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Sign PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- PDF Preview -->
+    <div class="col-md-6">
+        <h5>PDF Preview</h5>
+        <div id="pdf-preview"
+             class="border p-2 mb-3"
+             style="height:400px; overflow-y:auto; background:#f8f9fa;">
+            <p class="text-muted text-center mt-5">Upload a PDF to preview</p>
+        </div>
+
+        <div id="drop-area" class="border p-3 text-center">
+            Drag & drop PDF here or click to select
+            <input type="file" id="pdfInput" accept="application/pdf" hidden>
+        </div>
+    </div>
+
+    <!-- Signature Pad -->
+    <div class="col-md-6">
+        <h5>Draw Signature</h5>
+        <canvas id="signaturePad"
+                width="400"
+                height="150"
+                class="border rounded bg-white mb-2"></canvas>
+        <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearPad()">Clear</button>
+        </div>
+    </div>
+</div>
+
+<button class="btn btn-primary mt-4 w-100" onclick="submitSign()">
+    Sign & Download
+</button>
+
+<form id="signForm" method="POST">{% csrf_token %}</form>
+
+<script>
+const canvas = document.getElementById("signaturePad");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+
+canvas.onmousedown = () => drawing = true;
+canvas.onmouseup = () => drawing = false;
+canvas.onmouseleave = () => drawing = false;
+
+canvas.onmousemove = e => {
+    if (!drawing) return;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#000";
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+};
+
+function clearPad() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+/* -----------------------------
+   PDF Preview
+-------------------------------- */
+let uploadedPDF = null;
+const preview = document.getElementById("pdf-preview");
+const pdfFileInput = document.getElementById("pdfInput");
+const dropArea = document.getElementById("drop-area");
+
+dropArea.onclick = () => pdfFileInput.click();
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light"); };
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light");
+dropArea.ondrop = e => { e.preventDefault(); dropArea.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0]); };
+
+pdfFileInput.onchange = e => handleFile(e.target.files[0]);
+
+function handleFile(file){
+    if (!file || file.type !== "application/pdf") return;
+    uploadedPDF = file;
+    preview.innerHTML = "";
+    file.arrayBuffer().then(data => {
+        pdfjsLib.getDocument({ data }).promise.then(doc => renderAllPages(doc));
+    });
+}
+
+async function renderAllPages(pdfDoc){
+    preview.innerHTML = "";
+    for (let i=1; i<=pdfDoc.numPages; i++){
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale: 1.0 });
+        const canvasEl = document.createElement("canvas");
+        canvasEl.className = "mb-2 shadow-sm bg-white";
+        canvasEl.width = viewport.width;
+        canvasEl.height = viewport.height;
+        await page.render({ canvasContext: canvasEl.getContext("2d"), viewport }).promise;
+        preview.appendChild(canvasEl);
+    }
+}
+
+/* -----------------------------
+   Submit & Download
+-------------------------------- */
+async function submitSign(){
+    if (!uploadedPDF) { alert("Upload a PDF first"); return; }
+
+    const signature = canvas.toDataURL("image/png");
+    const fd = new FormData();
+    fd.append("pdf", uploadedPDF);
+    fd.append("signature", signature);
+
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const res = await fetch("", { method:"POST", headers: {"X-CSRFToken": csrf}, body: fd });
+
+    if(!res.ok){ alert("Signing failed"); return; }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+
+    // Use input PDF name for download
+    const baseName = uploadedPDF.name.replace(/\.[^.]+$/, "");
+    a.download = baseName + "_signed.pdf";
+
+    a.click();
+}
+</script>
+{% endblock %}

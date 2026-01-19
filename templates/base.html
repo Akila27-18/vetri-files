@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}VetriFiles{% endblock %}</title>
-
     {% load static %}
 
     <!-- Bootstrap -->
@@ -14,207 +13,126 @@
 
     <!-- Lordicon -->
     <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+    <style>
+        .mega-menu { max-width: 1200px; width: 100%; }
+        .mega-item {
+            display:flex; gap:12px; padding:10px;
+            border-radius:8px; text-decoration:none;
+            color:#212529;
+        }
+        .mega-item:hover { background:#f1f3f5; }
+        .mega-item lord-icon { width:28px; height:28px; }
+        .mega-item small { display:block; color:#6c757d; }
+    </style>
 </head>
 
 <body>
 
-<!-- ===== NAVBAR ===== -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top px-4">
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar navbar-expand-lg bg-white shadow-sm sticky-top px-4">
     <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
-        <lord-icon
-            src="https://cdn.lordicon.com/eknmywsn.json"
-            trigger="hover"
-            colors="primary:#0d6efd"
-            style="width:30px;height:30px">
-        </lord-icon>
+        <lord-icon src="https://cdn.lordicon.com/eknmywsn.json"
+                   trigger="hover"
+                   colors="primary:#0d6efd"
+                   style="width:30px;height:30px"></lord-icon>
         VetriFiles
     </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-            data-bs-target="#navMenu">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
         <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navMenu">
-        <ul class="navbar-nav ms-auto align-items-center gap-2">
+        <ul class="navbar-nav ms-auto gap-3 align-items-center">
 
             <!-- SEARCH -->
             <li class="nav-item">
-                <input class="form-control form-control-sm"
-                       type="search"
-                       placeholder="Search tools..."
-                       style="width:180px">
+                <input class="form-control form-control-sm" type="search"
+                       placeholder="Search tools..." style="width:200px">
             </li>
 
             <!-- MEGA MENU -->
             <li class="nav-item dropdown position-static">
-                <a class="nav-link dropdown-toggle fw-semibold" href="#"
-                   role="button" data-bs-toggle="dropdown">
+                <a class="nav-link dropdown-toggle fw-semibold" href="#" data-bs-toggle="dropdown">
                     All PDF Tools
                 </a>
 
                 <div class="dropdown-menu mega-menu p-4 shadow-lg border-0">
                     <div class="row g-4">
 
-                        <!-- COLUMN 1 -->
+                        <!-- ORGANIZE -->
                         <div class="col-md-3">
                             <h6 class="text-muted">Organize PDF</h6>
-
-                            <a href="/merge/" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/wwcdwkbt.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Merge PDF</strong>
-                                    <small>Combine multiple PDFs</small>
-                                </div>
-                            </a>
-
-                            <a href="/split/" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/soseozvi.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Split PDF</strong>
-                                    <small>Extract pages easily</small>
-                                </div>
-                            </a>
-
-                            <a href="/compress/" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/ibjcmwlh.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Compress PDF</strong>
-                                    <small>Reduce file size</small>
-                                </div>
-                            </a>
+                            <a href="/merge/" class="mega-item"><strong>Merge PDF</strong></a>
+                            <a href="/split/" class="mega-item"><strong>Split PDF</strong></a>
+                            <a href="/compress/" class="mega-item"><strong>Compress PDF</strong></a>
+                            <a href="/rotate/" class="mega-item"><strong>Rotate PDF</strong></a>
+                            <a href="/organize/" class="mega-item"><strong>Organize Pages</strong></a>
+                            <a href="/page-numbers/" class="mega-item"><strong>Page Numbers</strong></a>
                         </div>
 
-                        <!-- COLUMN 2 -->
+                        <!-- CONVERT -->
                         <div class="col-md-3">
                             <h6 class="text-muted">Convert PDF</h6>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/wzwygmng.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>PDF to Word</strong>
-                                    <small>Editable documents</small>
-                                </div>
-                            </a>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/xtzvywzp.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Word to PDF</strong>
-                                    <small>Professional PDFs</small>
-                                </div>
-                            </a>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/ylvuooxd.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>PDF to Image</strong>
-                                    <small>JPG / PNG output</small>
-                                </div>
-                            </a>
+                            <a href="/pdf-to-image/" class="mega-item">PDF → Image</a>
+                            <a href="/image-to-pdf/" class="mega-item">Image → PDF</a>
+                            <a href="/pdf-to-word/" class="mega-item">PDF → Word</a>
+                            <a href="/word-to-pdf/" class="mega-item">Word → PDF</a>
+                            <a href="/pdf-to-excel/" class="mega-item">PDF → Excel</a>
+                            <a href="/excel-to-pdf/" class="mega-item">Excel → PDF</a>
+                            <a href="/pdf-to-ppt/" class="mega-item">PDF → PPT</a>
+                            <a href="/ppt-to-pdf/" class="mega-item">PPT → PDF</a>
+                            <a href="/pdf-to-html/" class="mega-item">PDF → HTML</a>
+                            <a href="/scan-to-pdf/" class="mega-item">Scan → PDF</a>
                         </div>
 
-                        <!-- COLUMN 3 -->
+                        <!-- SECURITY -->
                         <div class="col-md-3">
                             <h6 class="text-muted">Security</h6>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/vfczflna.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Unlock PDF</strong>
-                                    <small>Remove passwords</small>
-                                </div>
-                            </a>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/uqpazftn.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Protect PDF</strong>
-                                    <small>Add encryption</small>
-                                </div>
-                            </a>
+                            <a href="/protect/" class="mega-item">Protect PDF</a>
+                            <a href="/unlock/" class="mega-item">Unlock PDF</a>
+                            <a href="/sign/" class="mega-item">Sign PDF</a>
+                            <a href="/redact/" class="mega-item">Redact PDF</a>
+                            <a href="/watermark/" class="mega-item">Watermark</a>
                         </div>
 
-                        <!-- COLUMN 4 -->
+                        <!-- ADVANCED -->
                         <div class="col-md-3">
                             <h6 class="text-muted">Advanced</h6>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/ksdjzsym.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>OCR PDF</strong>
-                                    <small>Text from scanned PDFs</small>
-                                </div>
-                            </a>
-
-                            <a href="#" class="mega-item">
-                                <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json"
-                                           trigger="hover"></lord-icon>
-                                <div>
-                                    <strong>Watermark</strong>
-                                    <small>Brand your PDF</small>
-                                </div>
-                            </a>
+                            <a href="/ocr/" class="mega-item">OCR PDF</a>
+                            <a href="/repair/" class="mega-item">Repair PDF</a>
+                            <a href="/compare/" class="mega-item">Compare PDF</a>
                         </div>
 
                     </div>
                 </div>
             </li>
-
         </ul>
     </div>
 </nav>
 
-<!-- ===== PAGE CONTENT ===== -->
+<!-- ================= CONTENT ================= -->
 <div class="container my-5">
     {% block content %}{% endblock %}
 </div>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- PDF.JS -->
-<script src="{% static 'js/pdf.js' %}"></script>
-<script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
-</script>
-<!-- PDF.JS (CDN – Render Safe) -->
+<!-- ================= FOOTER ================= -->
+<footer class="border-top py-4 text-center text-muted">
+    <strong>VetriFiles</strong> — Simple • Secure • Fast PDF Tools  
+    <div class="mt-2">© {{ now|date:"Y" }} VetriFiles</div>
+</footer>
+<!-- PDF.js (single, correct include) -->
+ <!-- PDF.JS --> 
+  <script src="{% static 'js/pdf.js' %}"></script> 
+  <script> pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}"; </script>
+<!-- PDF.js (single, correct include) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 </script>
 
-<script>
-const searchInput = document.querySelector('input[type="search"]');
-
-if (searchInput) {
-    searchInput.addEventListener("input", function () {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll(".mega-item").forEach(item => {
-            const text = item.innerText.toLowerCase();
-            item.style.display = text.includes(term) ? "flex" : "none";
-        });
-    });
-}
-</script>
-<footer class="mt-5 py-4 border-top text-center text-muted">
-    <div class="container">
-        <strong>VetriFiles</strong> — Simple • Secure • Fast PDF Tools  
-        <div class="mt-2">
-            © {{ now|date:"Y" }} VetriFiles. All rights reserved.
-        </div>
-    </div>
-</footer>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

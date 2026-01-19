@@ -5,6 +5,33 @@ import uuid
 import zipfile
 import tempfile
 import subprocess
+import fitz 
+import base64
+
+import io
+import os
+import tempfile
+import requests
+import difflib
+from PyPDF2 import PdfReader
+import io
+from django.shortcuts import render
+from django.http import HttpResponse
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.colors import black
+
+
+from django.shortcuts import render
+from django.http import HttpResponse
+
+from PIL import Image
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+
+import pdfkit
 
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -13,6 +40,10 @@ from django.core.files.base import ContentFile
 
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 from django.conf import settings
+
+
+
+
 
 GS_PATH = settings.GS_PATH
 
@@ -38,6 +69,65 @@ def home(request):
         {"name": "Excel → PDF", "desc": "Spreadsheet to PDF", "icon": "https://cdn.lordicon.com/jjoolpwc.json", "url": "/excel-to-pdf/"},
         {"name": "PPT → PDF", "desc": "Slides to PDF", "icon": "https://cdn.lordicon.com/iawrhwdo.json", "url": "/ppt-to-pdf/"},
         {"name": "PDF → PPT", "desc": "PDF to slides", "icon": "https://cdn.lordicon.com/nocovwne.json", "url": "/pdf-to-ppt/"},
+        {
+            "name": "Sign PDF","desc": "Secure digital signature","icon": "https://cdn.lordicon.com/xtzvywzp.json",
+            "desc": "Secure digital signature",
+            "icon": "https://cdn.lordicon.com/xtzvywzp.json",
+            "url": "/sign/"
+        },
+        {
+            "name": "Organize PDF",
+            "desc": "Edit PDF structure",
+            "icon": "https://cdn.lordicon.com/gsqxdxog.json",
+            "url": "/organize/"
+        },
+
+        {
+            "name": "Repair PDF",
+            "desc": "Fix corrupted PDF files",
+            "icon": "https://cdn.lordicon.com/wzwygmng.json",
+            "url": "/repair/"
+        },
+        {
+            "name": "Compare PDF",
+            "desc": "Check PDF changes",
+            "icon": "https://cdn.lordicon.com/ivhjpjsw.json",
+            "url": "/compare/"
+        },
+        {
+            "name": "Redact PDF",
+            "desc": "Hide sensitive information",
+            "icon": "https://cdn.lordicon.com/uqpazftn.json",
+            "url": "/redact/"
+        },
+        {
+            "name": "Scan to PDF",
+            "desc": "Turn scans into PDFs",
+            "icon": "https://cdn.lordicon.com/iltqorsz.json",
+            "url": "/scan-to-pdf/"
+        },
+        {
+            "name": "Page Numbers",
+            "desc": "Add page numbers to PDF",
+            "icon": "https://cdn.lordicon.com/puvaffet.json",
+            "url": "/page-numbers/"
+        },
+        # {
+        #     "name": "HTML to PDF",
+        #     "desc": "Convert web pages to PDF",
+        #     "icon": "https://cdn.lordicon.com/xtzvywzp.json",
+        #     "url": "/html-to-pdf/"
+        # },
+
+        {
+            "name": "PDF → HTML",
+            "desc": "Convert PDF into web-friendly HTML",
+            "icon": "https://cdn.lordicon.com/ylvuooxd.json",
+            "url": "/pdf-to-html/"
+        },
+
+
+
     ]
     return render(request, "home.html", {"tools": tools})
 
@@ -452,3 +542,372 @@ def unlock_pdf(request):
         )
 
     return render(request, "unlock.html")
+import io
+import os
+import base64
+import tempfile
+from django.shortcuts import render
+from django.http import HttpResponse
+from PIL import Image
+import fitz  # PyMuPDF
+import pdfkit
+import pdfplumber
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.colors import black
+
+# ===============================
+# SIGN PDF
+# ===============================
+def sign_pdf(request):
+    if request.method == "POST":
+        pdf_file = request.FILES.get("pdf")
+        signature_data = request.POST.get("signature")
+
+        if not pdf_file or not signature_data:
+            return HttpResponse("Missing PDF or signature", status=400)
+
+        # Decode signature
+        header, encoded = signature_data.split(",", 1)
+        signature_bytes = base64.b64decode(encoded)
+        signature_img = Image.open(io.BytesIO(signature_bytes))
+
+        # Open PDF
+        pdf_bytes = pdf_file.read()
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page = doc[-1]
+
+        # Convert PIL image to Pixmap
+        img_bytes = io.BytesIO()
+        signature_img.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+        img_pix = fitz.Pixmap(fitz.open("png", img_bytes))
+
+        # Insert at bottom-right
+        rect = fitz.Rect(page.rect.width - 200, page.rect.height - 120,
+                         page.rect.width - 20, page.rect.height - 20)
+        page.insert_image(rect, pixmap=img_pix)
+
+        # Save to memory
+        output = io.BytesIO()
+        doc.save(output)
+        doc.close()
+        output.seek(0)
+
+        # Download with original filename
+        base_name = pdf_file.name.rsplit(".", 1)[0]
+        filename = f"{base_name}_signed.pdf"
+
+        response = HttpResponse(output.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "sign_pdf.html")
+
+
+# ===============================
+# SCAN TO PDF
+# ===============================
+def scan_to_pdf(request):
+    if request.method == "POST":
+        images = request.FILES.getlist("images")
+        if not images:
+            return HttpResponse("No images uploaded", status=400)
+
+        pil_images = [Image.open(img).convert("RGB") for img in images]
+
+        buffer = io.BytesIO()
+        pil_images[0].save(buffer, format="PDF", save_all=True, append_images=pil_images[1:])
+        buffer.seek(0)
+
+        # Filename based on first image if available
+        base_name = images[0].name.rsplit(".", 1)[0] if images else "scanned"
+        filename = f"{base_name}_scanned.pdf"
+
+        response = HttpResponse(buffer.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "scan_to_pdf.html")
+
+
+
+
+# ===============================
+# HTML TO PDF
+# ===============================
+import tempfile
+from django.shortcuts import render
+from django.http import HttpResponse
+import pdfkit
+
+def html_to_pdf(request):
+    """
+    Convert HTML code to PDF.
+    """
+    if request.method == "POST":
+        html_content = request.POST.get("html")
+        filename = request.POST.get("filename", "document").strip() or "document"
+
+        if not html_content:
+            return HttpResponse("No HTML provided", status=400)
+
+        # Generate PDF in a temporary file
+        with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp_pdf:
+            pdfkit.from_string(html_content, tmp_pdf.name)
+            tmp_pdf.seek(0)
+
+            response = HttpResponse(tmp_pdf.read(), content_type="application/pdf")
+            response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
+            return response
+
+    return render(request, "html_to_pdf.html")
+
+
+
+
+
+import io
+import os
+from django.shortcuts import render
+from django.http import HttpResponse
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from django.views.decorators.csrf import csrf_exempt
+
+# ===============================
+# PAGE NUMBERS
+# ===============================
+@csrf_exempt
+def page_numbers(request):
+    if request.method == "POST":
+        pdf_file = request.FILES.get("pdf")
+        position = request.POST.get("position", "bottom")
+
+        if not pdf_file:
+            return HttpResponse("No PDF uploaded", status=400)
+
+        reader = PdfReader(pdf_file)
+        writer = PdfWriter()
+
+        for i, page in enumerate(reader.pages, start=1):
+            packet = io.BytesIO()
+            c = canvas.Canvas(packet, pagesize=A4)
+            c.setFont("Helvetica", 10)
+            if position == "top":
+                c.drawCentredString(300, 820, str(i))
+            else:
+                c.drawCentredString(300, 20, str(i))
+            c.save()
+            packet.seek(0)
+
+            overlay = PdfReader(packet).pages[0]
+            page.merge_page(overlay)
+            writer.add_page(page)
+
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
+
+        base_name = os.path.splitext(pdf_file.name)[0]
+        filename = f"{base_name}_pagenumbers.pdf"
+
+        response = HttpResponse(buffer.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "page_numbers.html")
+
+
+# ===============================
+# ORGANIZE PDF
+# ===============================
+@csrf_exempt
+def organize_pdf(request):
+    if request.method == "POST":
+        pdf_file = request.FILES.get("pdf")
+        order = request.POST.get("order")  # e.g. 3,1,2
+
+        if not pdf_file or not order:
+            return HttpResponse("Missing data", status=400)
+
+        page_order = [int(x.strip()) - 1 for x in order.split(",")]
+
+        reader = PdfReader(pdf_file)
+        writer = PdfWriter()
+
+        for i in page_order:
+            if 0 <= i < len(reader.pages):
+                writer.add_page(reader.pages[i])
+
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
+
+        base_name = os.path.splitext(pdf_file.name)[0]
+        filename = f"{base_name}_organized.pdf"
+
+        response = HttpResponse(buffer.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "organize_pdf.html")
+
+
+# ===============================
+# COMPARE PDF
+# ===============================
+@csrf_exempt
+def compare_pdf(request):
+    if request.method == "POST":
+        pdf1_file = request.FILES.get("pdf1")
+        pdf2_file = request.FILES.get("pdf2")
+
+        if not pdf1_file or not pdf2_file:
+            return HttpResponse("Both PDF files are required.", status=400)
+
+        pdf1 = PdfReader(pdf1_file)
+        pdf2 = PdfReader(pdf2_file)
+        writer = PdfWriter()
+
+        max_pages = max(len(pdf1.pages), len(pdf2.pages))
+        for i in range(max_pages):
+            page1 = pdf1.pages[i] if i < len(pdf1.pages) else None
+            page2 = pdf2.pages[i] if i < len(pdf2.pages) else None
+
+            if page1 and page2 and page1.extract_text() == page2.extract_text():
+                writer.add_page(page1)
+            else:
+                # Difference page
+                packet = io.BytesIO()
+                c = canvas.Canvas(packet, pagesize=A4)
+                c.drawString(100, 500, f"Page {i+1}: Difference detected")
+                c.save()
+                packet.seek(0)
+                diff_page = PdfReader(packet).pages[0]
+                writer.add_page(diff_page)
+
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
+
+        base_name = os.path.splitext(pdf1_file.name)[0]
+        filename = f"{base_name}_comparison.pdf"
+
+        response = HttpResponse(buffer.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "compare_pdf.html")
+
+
+
+# ===============================
+# REPAIR PDF
+# ===============================
+def repair_pdf(request):
+    if request.method == "POST":
+        pdf_file = request.FILES.get("pdf")
+        if not pdf_file:
+            return HttpResponse("No PDF uploaded", status=400)
+
+        reader = PdfReader(pdf_file, strict=False)
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
+
+        base_name = pdf_file.name.rsplit(".", 1)[0]
+        filename = f"{base_name}_repaired.pdf"
+
+        response = HttpResponse(buffer.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "repair_pdf.html")
+
+
+
+
+
+# ===============================
+# REDACT PDF
+# ===============================
+def redact_pdf(request):
+    if request.method == "POST":
+        pdf_file = request.FILES.get("pdf")
+        text_to_redact = request.POST.get("text", "")
+
+        if not pdf_file:
+            return HttpResponse("No PDF uploaded", status=400)
+
+        reader = PdfReader(pdf_file)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            packet = io.BytesIO()
+            c = canvas.Canvas(packet, pagesize=A4)
+            c.setFillColor(black)
+            c.rect(50, 50, 500, 50, fill=1)  # You can adjust redaction box
+            c.save()
+            packet.seek(0)
+
+            overlay = PdfReader(packet).pages[0]
+            page.merge_page(overlay)
+            writer.add_page(page)
+
+        buffer = io.BytesIO()
+        writer.write(buffer)
+        buffer.seek(0)
+
+        base_name = pdf_file.name.rsplit(".", 1)[0]
+        filename = f"{base_name}_redacted.pdf"
+
+        response = HttpResponse(buffer.read(), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "redact_pdf.html")
+
+
+# ===============================
+# PDF TO HTML
+# ===============================
+def pdf_to_html(request):
+    if request.method == "POST":
+        pdf = request.FILES.get("pdf")
+        if not pdf:
+            return HttpResponse("No PDF uploaded", status=400)
+
+        base_name = os.path.splitext(pdf.name)[0]
+        output_filename = f"{base_name}.html"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            pdf_path = os.path.join(tmp, pdf.name)
+            with open(pdf_path, "wb") as f:
+                for chunk in pdf.chunks():
+                    f.write(chunk)
+
+            html = ["<!DOCTYPE html>", "<html>", "<head>", "<meta charset='utf-8'>",
+                    f"<title>{base_name}</title>", "<style>body{font-family:Arial; line-height:1.6; padding:20px} p{margin-bottom:12px}</style>",
+                    "</head><body>"]
+
+            import pdfplumber
+            with pdfplumber.open(pdf_path) as pdf_file:
+                for i, page in enumerate(pdf_file.pages, start=1):
+                    text = page.extract_text()
+                    if text:
+                        html.append(f"<h3>Page {i}</h3>")
+                        html.append(f"<p>{text.replace(chr(10), '<br>')}</p>")
+            html.append("</body></html>")
+
+        response = HttpResponse("\n".join(html), content_type="text/html")
+        response["Content-Disposition"] = f'attachment; filename="{output_filename}"'
+        return response
+
+    return render(request, "pdf_to_html.html")

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Scan to PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <h4 class="mb-3">Scan Images → PDF</h4>
+
+        <!-- Preview -->
+        <div id="preview-area"
+             class="border p-2 mb-3"
+             style="height:300px; overflow-y:auto; background:#f8f9fa;">
+            <p class="text-muted text-center mt-5">No images uploaded</p>
+        </div>
+
+        <form id="scan-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div id="drop-area" class="border p-4 text-center mb-3">
+                Drag & drop images here or click to select
+                <input type="file" name="images" id="fileElem" accept="image/*" multiple hidden required>
+            </div>
+
+            <button class="btn btn-info w-100">
+                Create PDF
+            </button>
+        </form>
+
+        <p class="text-muted mt-3">
+            Upload scanned images and combine into a PDF.
+        </p>
+
+    </div>
+</div>
+
+<script>
+let uploadedFiles = [];
+const previewArea = document.getElementById("preview-area");
+const fileElem = document.getElementById("fileElem");
+const dropArea = document.getElementById("drop-area");
+const form = document.getElementById("scan-form");
+
+/* -----------------------------
+   Drag & Drop
+-------------------------------- */
+dropArea.onclick = () => fileElem.click();
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light"); }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light");
+dropArea.ondrop = e => { e.preventDefault(); dropArea.classList.remove("bg-light"); handleFiles(e.dataTransfer.files); }
+
+fileElem.onchange = e => handleFiles(e.target.files);
+
+/* -----------------------------
+   Handle Files & Preview
+-------------------------------- */
+function handleFiles(files){
+    uploadedFiles = Array.from(files);
+    previewArea.innerHTML = "";
+    if(uploadedFiles.length === 0){
+        previewArea.innerHTML = '<p class="text-muted text-center mt-5">No images uploaded</p>';
+        return;
+    }
+
+    uploadedFiles.forEach(file => {
+        if(!file.type.startsWith("image/")) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            img.className = "img-thumbnail mb-2";
+            img.style.maxWidth = "100%";
+            previewArea.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+/* -----------------------------
+   Submit & Download PDF
+-------------------------------- */
+form.onsubmit = async e => {
+    e.preventDefault();
+    if(uploadedFiles.length === 0) return;
+
+    const fd = new FormData(form);
+    uploadedFiles.forEach(f => fd.append("images", f));
+
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    const res = await fetch("", { method:"POST", headers:{"X-CSRFToken": csrf}, body: fd });
+
+    if(!res.ok){ alert("PDF creation failed"); return; }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+
+    // Use first image name as base or fallback
+    const baseName = uploadedFiles[0]?.name.replace(/\.[^.]+$/, "") || "scanned";
+    a.download = baseName + "_scanned.pdf";
+
+    a.click();
+}
+</script>
+{% endblock %}

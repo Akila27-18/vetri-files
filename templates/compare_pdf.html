@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compare PDF – VetriFiles{% endblock %}
+
+{% block content %}
+
+<!-- Hidden CSRF form -->
+<form id="csrfForm">{% csrf_token %}</form>
+
+<div class="row">
+    <!-- PDF 1 -->
+    <div class="col-md-6">
+        <h5>PDF 1 Preview</h5>
+        <div id="pdf1-preview" class="border p-2 mb-3" style="height:300px; overflow-y:auto; background:#f8f9fa;"></div>
+
+        <div id="drop-area1" class="border p-3 text-center mb-3 rounded" style="cursor:pointer;">
+            Drag & drop PDF 1 or click to select
+            <input type="file" id="fileElem1" accept="application/pdf" hidden>
+        </div>
+    </div>
+
+    <!-- PDF 2 -->
+    <div class="col-md-6">
+        <h5>PDF 2 Preview</h5>
+        <div id="pdf2-preview" class="border p-2 mb-3" style="height:300px; overflow-y:auto; background:#f8f9fa;"></div>
+
+        <div id="drop-area2" class="border p-3 text-center mb-3 rounded" style="cursor:pointer;">
+            Drag & drop PDF 2 or click to select
+            <input type="file" id="fileElem2" accept="application/pdf" hidden>
+        </div>
+    </div>
+</div>
+
+<button id="compareBtn" class="btn btn-primary w-100">Compare PDFs</button>
+
+<!-- PDF.js -->
+<script src="{% static 'js/pdf.min.js' %}"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
+
+let pdf1File = null, pdf2File = null;
+let pdf1Doc = null, pdf2Doc = null;
+
+const preview1 = document.getElementById("pdf1-preview");
+const preview2 = document.getElementById("pdf2-preview");
+
+const fileElem1 = document.getElementById("fileElem1");
+const dropArea1 = document.getElementById("drop-area1");
+
+const fileElem2 = document.getElementById("fileElem2");
+const dropArea2 = document.getElementById("drop-area2");
+
+// ====================
+// Drag & Drop handlers
+// ====================
+dropArea1.onclick = () => fileElem1.click();
+dropArea1.ondragover = e => { e.preventDefault(); dropArea1.classList.add("bg-light"); }
+dropArea1.ondragleave = () => dropArea1.classList.remove("bg-light");
+dropArea1.ondrop = e => { e.preventDefault(); dropArea1.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0], 1); }
+fileElem1.onchange = e => handleFile(e.target.files[0], 1);
+
+dropArea2.onclick = () => fileElem2.click();
+dropArea2.ondragover = e => { e.preventDefault(); dropArea2.classList.add("bg-light"); }
+dropArea2.ondragleave = () => dropArea2.classList.remove("bg-light");
+dropArea2.ondrop = e => { e.preventDefault(); dropArea2.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0], 2); }
+fileElem2.onchange = e => handleFile(e.target.files[0], 2);
+
+// ====================
+// Handle uploaded file
+// ====================
+function handleFile(file, index) {
+    if(!file || file.type !== "application/pdf") return;
+    if(index===1){ pdf1File = file; preview1.innerHTML=""; loadPDF(file, 1); }
+    else { pdf2File = file; preview2.innerHTML=""; loadPDF(file, 2); }
+}
+
+// ====================
+// Load PDF and render preview
+// ====================
+function loadPDF(file, index){
+    file.arrayBuffer().then(data => {
+        pdfjsLib.getDocument({ data }).promise.then(doc => {
+            if(index===1){ pdf1Doc = doc; renderPages(preview1, pdf1Doc); }
+            else { pdf2Doc = doc; renderPages(preview2, pdf2Doc); }
+        });
+    });
+}
+
+async function renderPages(container, pdfDoc){
+    container.innerHTML = "";
+    for(let i=1;i<=pdfDoc.numPages;i++){
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({scale:0.8});
+        const canvas = document.createElement("canvas");
+        canvas.className = "mb-2 shadow-sm bg-white";
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({canvasContext:canvas.getContext("2d"), viewport}).promise;
+        container.appendChild(canvas);
+    }
+}
+
+// ====================
+// Compare PDFs and download
+// ====================
+document.getElementById("compareBtn").onclick = async () => {
+    if(!pdf1File || !pdf2File){ alert("Upload both PDFs"); return; }
+
+    const fd = new FormData();
+    fd.append("pdf1", pdf1File);
+    fd.append("pdf2", pdf2File);
+    fd.append("csrfmiddlewaretoken", document.querySelector('#csrfForm [name=csrfmiddlewaretoken]').value);
+
+    const res = await fetch("{% url 'compare_pdf' %}", { method:"POST", body:fd });
+    if(!res.ok){ alert("Comparison failed"); return; }
+
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = pdf1File.name.replace(/\.pdf$/i,"_comparison.pdf");
+    a.click();
+};
+</script>
+
+{% endblock %}

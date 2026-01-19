@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Page Numbers – VetriFiles{% endblock %}
+
+{% block content %}
+<div class="col-md-8 mx-auto">
+    <h4 class="mb-3">Add Page Numbers</h4>
+
+    <form id="pageForm" method="POST">
+        {% csrf_token %}
+
+        <div id="drop-area" class="border p-3 text-center mb-3 rounded" style="position:relative; cursor:pointer;">
+            Drag & drop PDF here or click to select
+            <input type="file" id="fileElem" name="pdf" accept="application/pdf"
+                   style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        </div>
+
+        <div id="pdf-preview" class="border p-2 mb-3" style="height:400px; overflow-y:auto; background:#f8f9fa;"></div>
+
+        <select id="position" name="position" class="form-select mb-3">
+            <option value="bottom">Bottom</option>
+            <option value="top">Top</option>
+        </select>
+
+        <button type="submit" class="btn btn-success w-100">Add Page Numbers</button>
+    </form>
+</div>
+
+<script src="{% static 'js/pdf.min.js' %}"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'js/pdf.worker.js' %}";
+
+let uploadedFile = null;
+let pdfDoc = null;
+const preview = document.getElementById("pdf-preview");
+const fileElem = document.getElementById("fileElem");
+const dropArea = document.getElementById("drop-area");
+const pageForm = document.getElementById("pageForm");
+
+// Drag & Drop
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light"); }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light");
+dropArea.ondrop = e => { e.preventDefault(); dropArea.classList.remove("bg-light"); handleFile(e.dataTransfer.files[0]); }
+
+fileElem.onchange = e => handleFile(e.target.files[0]);
+
+function handleFile(file){
+    if(!file || file.type !== "application/pdf") return;
+    uploadedFile = file;
+    preview.innerHTML = "";
+    loadPDF(file);
+}
+
+function loadPDF(file){
+    file.arrayBuffer().then(data => {
+        pdfjsLib.getDocument({ data }).promise.then(doc => {
+            pdfDoc = doc;
+            renderAllPages();
+        });
+    });
+}
+
+async function renderAllPages(){
+    preview.innerHTML = "";
+    for(let i=1; i<=pdfDoc.numPages; i++){
+        const page = await pdfDoc.getPage(i);
+        const viewport = page.getViewport({ scale:1.1 });
+        const canvas = document.createElement("canvas");
+        canvas.className = "mb-2 shadow-sm bg-white";
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+        preview.appendChild(canvas);
+    }
+}
+
+// Intercept form submission to use fetch
+pageForm.onsubmit = async e => {
+    e.preventDefault();
+    if(!uploadedFile){ alert("Upload a PDF"); return; }
+
+    const fd = new FormData();
+    fd.append("pdf", uploadedFile);
+    fd.append("position", document.getElementById("position").value);
+    fd.append("csrfmiddlewaretoken", document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    const res = await fetch("{% url 'page_numbers' %}", {  // make sure your view has name='page_numbers'
+        method: "POST",
+        body: fd
+    });
+
+    if(!res.ok){ alert("Failed"); return; }
+
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = uploadedFile.name.replace(/\.pdf$/i,"_pagenumbers.pdf");
+    a.click();
+};
+</script>
+{% endblock %}
