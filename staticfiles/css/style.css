@@ -1,0 +1,74 @@
+body {
+    background-color: #f8f9fa;
+}
+.tool-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    transition: all 0.25s ease;
+    height: 100%;
+}
+
+.tool-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
+
+.tool-card .icon {
+    font-size: 38px;
+}
+
+#drop-area {
+    border: 2px dashed #ccc;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+#file-list li {
+    cursor: grab;
+}
+#file-list li:active {
+    cursor: grabbing;
+}
+.mega-menu {
+    width: 100%;
+}
+
+.mega-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #212529;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.mega-item:hover {
+    background: #f1f5ff;
+    transform: translateX(4px);
+}
+
+.mega-item lord-icon {
+    width: 32px;
+    height: 32px;
+}
+.tool-card {
+    display: block;
+    text-align: center;
+    padding: 30px 15px;
+    background: white;
+    border-radius: 16px;
+    text-decoration: none;
+    color: #000;
+    box-shadow: 0 6px 20px rgba(0,0,0,.06);
+    transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.tool-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.12);
+}
