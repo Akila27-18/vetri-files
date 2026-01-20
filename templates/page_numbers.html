@@ -5,12 +5,12 @@
 
 {% block content %}
 <div class="col-md-8 mx-auto">
-    <h4 class="mb-3">Add Page Numbers</h4>
+    <h4 class="mb-3 text-dark">Add Page Numbers</h4>
 
     <form id="pageForm" method="POST">
         {% csrf_token %}
 
-        <div id="drop-area" class="border p-3 text-center mb-3 rounded" style="position:relative; cursor:pointer;">
+        <div id="drop-area" class="border p-3 text-center mb-3 rounded text-dark" style="position:relative; cursor:pointer;">
             Drag & drop PDF here or click to select
             <input type="file" id="fileElem" name="pdf" accept="application/pdf"
                    style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">

@@ -2,10 +2,10 @@
 {% block title %}Word → PDF{% endblock %}
 
 {% block content %}
-<h5>Word → PDF</h5>
+<h5 class="text-dark">Word → PDF</h5>
 <form id="convert-form">
     {% csrf_token %}
-    <div id="drop-area" class="border p-4 text-center mb-3">
+    <div id="drop-area" class="border p-4 text-center mb-3 text-dark">
         Drag & drop Word file here or click to select
         <input type="file" id="fileElem" accept=".docx" hidden>
     </div>

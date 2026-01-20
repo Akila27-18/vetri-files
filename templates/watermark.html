@@ -5,7 +5,7 @@
 <div class="row">
     <!-- PREVIEW -->
     <div class="col-md-6">
-        <h5>PDF Preview</h5>
+        <h5 class="text-dark">PDF Preview</h5>
         <div id="pdf-preview" class="border p-2"
              style="height:400px; overflow-y:auto; background:#f8f9fa;"></div>
     </div>
@@ -17,7 +17,7 @@
         <form id="watermark-form">
             {% csrf_token %}
 
-            <div id="drop-area" class="border p-4 text-center mb-3">
+            <div id="drop-area" class="border p-4 text-center mb-3 text-dark">
                 Drag & drop PDF here or click to select
                 <input type="file" id="fileElem" accept="application/pdf" hidden>
             </div>

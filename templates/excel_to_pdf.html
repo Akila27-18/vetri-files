@@ -2,10 +2,10 @@
 {% block title %}Excel → PDF{% endblock %}
 
 {% block content %}
-<h5>Convert Excel to PDF</h5>
+<h5 class="text-dark">Convert Excel to PDF</h5>
 <form id="convert-form">
     {% csrf_token %}
-    <div id="drop-area" class="border p-4 text-center mb-3">
+    <div id="drop-area" class="border p-4 text-center mb-3 text-dark">
         Drag & drop Excel file here or click to select
         <input type="file" id="fileElem" accept=".xlsx,.xls" hidden>
     </div>

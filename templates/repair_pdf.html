@@ -5,7 +5,7 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
 
-        <h4 class="mb-3">Repair PDF</h4>
+        <h4 class="mb-3 text-dark">Repair PDF</h4>
 
         <!-- PDF Preview -->
         <div id="pdf-preview"
@@ -17,7 +17,7 @@
         <form id="repair-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <div id="drop-area" class="border p-4 text-center mb-3">
+            <div id="drop-area" class="border p-4 text-center mb-3 text-dark">
                 Drag & drop PDF here or click to select
                 <input type="file" name="pdf" id="fileElem" accept="application/pdf" hidden required>
             </div>

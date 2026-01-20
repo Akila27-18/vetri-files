@@ -10,14 +10,14 @@
     </div>
 
     <!-- Split Controls -->
-    <div class="col-md-6">
+    <div class="col-md-6 text-dark">
         <h5>Split PDF</h5>
 
         <form id="split-form">
             {% csrf_token %}
 
             <!-- Drag & Drop / File Select -->
-            <div id="drop-area" class="border p-4 text-center mb-3">
+            <div id="drop-area" class="border p-4 text-center mb-3 text-dark">
                 Drag & drop PDF here or click to select
                 <input type="file" id="fileElem" accept="application/pdf" hidden>
             </div>

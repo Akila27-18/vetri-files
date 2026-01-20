@@ -5,7 +5,7 @@
 <div class="row justify-content-center">
     <div class="col-md-6">
 
-        <h4 class="mb-3">Scan Images → PDF</h4>
+        <h4 class="mb-3 text-dark">Scan Images → PDF</h4>
 
         <!-- Preview -->
         <div id="preview-area"
@@ -17,7 +17,7 @@
         <form id="scan-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <div id="drop-area" class="border p-4 text-center mb-3">
+            <div id="drop-area" class="border p-4 text-center mb-3 text-dark">
                 Drag & drop images here or click to select
                 <input type="file" name="images" id="fileElem" accept="image/*" multiple hidden required>
             </div>
