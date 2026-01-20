@@ -932,39 +932,42 @@ def pdf_to_html(request):
 #==============================
 # Crop PDF 
 #=============================
-import io
 from django.shortcuts import render
 from django.http import HttpResponse
-import fitz  # PyMuPDF
+from PyPDF2 import PdfReader, PdfWriter
+import os
 
 def crop_pdf(request):
-    """
-    Upload PDF, crop via mouse or manual input, and download with _crop filename.
-    """
     if request.method == "POST":
         pdf_file = request.FILES.get("pdf")
+
         if not pdf_file:
             return HttpResponse("No PDF uploaded", status=400)
 
-        # Safely parse coordinates
         try:
-            left = float(request.POST.get("left") or 0)
-            top = float(request.POST.get("top") or 0)
-            right = float(request.POST.get("right") or 0)
-            bottom = float(request.POST.get("bottom") or 0)
+            x1 = float(request.POST.get("x1", 0))
+            y1 = float(request.POST.get("y1", 0))
+            x2 = float(request.POST.get("x2", 0))
+            y2 = float(request.POST.get("y2", 0))
         except ValueError:
             return HttpResponse("Invalid crop values", status=400)
 
-        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
-        for page in doc:
-            rect = page.rect
-            crop_rect = fitz.Rect(left, top, right, bottom) & rect
-            page.set_cropbox(crop_rect)
+        reader = PdfReader(pdf_file)
+        writer = PdfWriter()
 
-        buffer = doc.write()
-        response = HttpResponse(buffer, content_type="application/pdf")
-        filename = pdf_file.name.replace(".pdf","_crop.pdf")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        for page in reader.pages:
+            page.mediabox.lower_left = (x1, y1)
+            page.mediabox.upper_right = (x2, y2)
+            writer.add_page(page)
+
+        original_name = os.path.splitext(pdf_file.name)[0]
+        output_name = f"{original_name}_crop.pdf"
+
+        response = HttpResponse(content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{output_name}"'
+
+        writer.write(response)
         return response
 
     return render(request, "crop_pdf.html")
+
