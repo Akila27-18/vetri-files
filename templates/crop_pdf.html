@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Crop PDF – VetriFiles{% endblock %}
+
+{% block content %}
+<form id="cropForm">
+    {% csrf_token %}
+
+    <div class="col-md-10 mx-auto">
+
+        <h4 class="mb-3 text-center text-dark">Crop PDF</h4>
+
+        <!-- Upload -->
+        <div id="drop-area"
+             class="border rounded p-3 text-center mb-3 text-dark"
+             style="cursor:pointer;">
+            Drag & drop PDF here or click to select
+            <input type="file" id="fileInput" accept="application/pdf" hidden>
+        </div>
+
+        <!-- Preview -->
+        <div class="border mb-3 p-2 bg-light text-center">
+            <canvas id="pdfCanvas"></canvas>
+        </div>
+
+        <!-- Manual crop -->
+        <div class="row mb-3">
+            <div class="col">
+                <input type="number" step="1" id="left" class="form-control" placeholder="Left">
+            </div>
+            <div class="col">
+                <input type="number" step="1" id="top" class="form-control" placeholder="Top">
+            </div>
+            <div class="col">
+                <input type="number" step="1" id="right" class="form-control" placeholder="Right">
+            </div>
+            <div class="col">
+                <input type="number" step="1" id="bottom" class="form-control" placeholder="Bottom">
+            </div>
+        </div>
+
+        <button type="button" id="cropBtn" class="btn btn-success w-100">
+            Crop PDF & Download
+        </button>
+
+        <p class="text-muted text-center mt-3">
+            Draw a rectangle to crop or enter values manually.
+        </p>
+
+    </div>
+</form>
+
+<!-- PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let pdfFile = null;
+let pdfDoc = null;
+let canvas = document.getElementById("pdfCanvas");
+let ctx = canvas.getContext("2d");
+
+let startX, startY, endX, endY;
+let dragging = false;
+
+const dropArea = document.getElementById("drop-area");
+const fileInput = document.getElementById("fileInput");
+
+/* =========================
+   Upload
+========================= */
+dropArea.onclick = () => fileInput.click();
+
+dropArea.ondragover = e => { e.preventDefault(); dropArea.classList.add("bg-light"); }
+dropArea.ondragleave = () => dropArea.classList.remove("bg-light");
+dropArea.ondrop = e => {
+    e.preventDefault();
+    dropArea.classList.remove("bg-light");
+    handleFile(e.dataTransfer.files[0]);
+};
+
+fileInput.onchange = e => handleFile(e.target.files[0]);
+
+function handleFile(file){
+    if(!file || file.type !== "application/pdf") return;
+    pdfFile = file;
+    loadPDF(file);
+}
+
+/* =========================
+   PDF Preview
+========================= */
+function loadPDF(file){
+    file.arrayBuffer().then(data => {
+        pdfjsLib.getDocument({data}).promise.then(doc => {
+            pdfDoc = doc;
+            renderPage();
+        });
+    });
+}
+
+async function renderPage(){
+    const page = await pdfDoc.getPage(1);
+    const viewport = page.getViewport({scale:1.2});
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({canvasContext:ctx, viewport}).promise;
+}
+
+/* =========================
+   Mouse Crop
+========================= */
+canvas.onmousedown = e => {
+    startX = e.offsetX;
+    startY = e.offsetY;
+    dragging = true;
+};
+
+canvas.onmousemove = e => {
+    if(!dragging) return;
+    endX = e.offsetX;
+    endY = e.offsetY;
+
+    renderPage().then(() => {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, startY, endX-startX, endY-startY);
+    });
+};
+
+canvas.onmouseup = () => {
+    dragging = false;
+
+    document.getElementById("left").value = Math.min(startX,endX);
+    document.getElementById("top").value = Math.min(startY,endY);
+    document.getElementById("right").value = Math.max(startX,endX);
+    document.getElementById("bottom").value = Math.max(startY,endY);
+};
+
+/* =========================
+   Submit & Download
+========================= */
+document.getElementById("cropBtn").onclick = async () => {
+    if(!pdfFile){ alert("Upload a PDF first"); return; }
+
+    const fd = new FormData();
+    fd.append("pdf", pdfFile);
+    fd.append("left", document.getElementById("left").value || 0);
+    fd.append("top", document.getElementById("top").value || 0);
+    fd.append("right", document.getElementById("right").value || canvas.width);
+    fd.append("bottom", document.getElementById("bottom").value || canvas.height);
+    fd.append("csrfmiddlewaretoken",
+        document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    const res = await fetch("", { method:"POST", body:fd });
+    if(!res.ok){
+        alert("Crop failed");
+        return;
+    }
+
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = pdfFile.name.replace(/\.pdf$/i,"_crop.pdf");
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+};
+</script>
+{% endblock %}

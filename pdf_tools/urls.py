@@ -25,9 +25,12 @@ urlpatterns = [
     path("scan-to-pdf/", views.scan_to_pdf, name="scan_to_pdf"),
     path("compare/", views.compare_pdf, name="compare_pdf"),
     path("organize/", views.organize_pdf, name="organize_pdf"),
-    # path("html-to-pdf/", views.html_to_pdf, name="html_to_pdf"),
+    path("html-to-pdf/", views.html_to_pdf, name="html_to_pdf"),
     path("pdf-to-html/", views.pdf_to_html, name="pdf_to_html"),
     path("page-numbers/", views.page_numbers, name="page_numbers"),
     path("repair/", views.repair_pdf, name="repair_pdf"),
+    path("crop/", views.crop_pdf, name="crop_pdf"),
+    
+
 ]
 

@@ -41,6 +41,13 @@ from django.core.files.base import ContentFile
 from PyPDF2 import PdfMerger, PdfReader, PdfWriter
 from django.conf import settings
 
+import pdfkit
+import tempfile
+from django.http import HttpResponse
+from django.shortcuts import render
+
+WKHTML_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+config = pdfkit.configuration(wkhtmltopdf=WKHTML_PATH)
 
 
 
@@ -112,18 +119,24 @@ def home(request):
             "icon": "https://cdn.lordicon.com/puvaffet.json",
             "url": "/page-numbers/"
         },
-        # {
-        #     "name": "HTML to PDF",
-        #     "desc": "Convert web pages to PDF",
-        #     "icon": "https://cdn.lordicon.com/xtzvywzp.json",
-        #     "url": "/html-to-pdf/"
-        # },
+        {
+            "name": "HTML to PDF",
+            "desc": "Convert web pages to PDF",
+            "icon": "https://cdn.lordicon.com/xtzvywzp.json",
+            "url": "/html-to-pdf/"
+        },
 
         {
             "name": "PDF → HTML",
             "desc": "Convert PDF into web-friendly HTML",
             "icon": "https://cdn.lordicon.com/ylvuooxd.json",
             "url": "/pdf-to-html/"
+        },
+        {
+            "name": "Crop PDF",
+            "desc": "Trim PDF pages",
+            "icon": "https://cdn.lordicon.com/aklfruoc.json",
+            "url": "/crop/"
         },
 
 
@@ -637,15 +650,12 @@ def scan_to_pdf(request):
 # ===============================
 # HTML TO PDF
 # ===============================
-import tempfile
 from django.shortcuts import render
 from django.http import HttpResponse
-import pdfkit
+# from weasyprint import HTML
+
 
 def html_to_pdf(request):
-    """
-    Convert HTML code to PDF.
-    """
     if request.method == "POST":
         html_content = request.POST.get("html")
         filename = request.POST.get("filename", "document").strip() or "document"
@@ -653,16 +663,24 @@ def html_to_pdf(request):
         if not html_content:
             return HttpResponse("No HTML provided", status=400)
 
-        # Generate PDF in a temporary file
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as tmp_pdf:
-            pdfkit.from_string(html_content, tmp_pdf.name)
-            tmp_pdf.seek(0)
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            pdfkit.from_string(
+                html_content,
+                tmp.name,
+                configuration=config,
+                options={
+                    "encoding": "UTF-8",
+                    "enable-local-file-access": ""
+                }
+            )
 
-            response = HttpResponse(tmp_pdf.read(), content_type="application/pdf")
+        with open(tmp.name, "rb") as f:
+            response = HttpResponse(f.read(), content_type="application/pdf")
             response["Content-Disposition"] = f'attachment; filename="{filename}.pdf"'
             return response
 
     return render(request, "html_to_pdf.html")
+
 
 
 
@@ -911,3 +929,42 @@ def pdf_to_html(request):
         return response
 
     return render(request, "pdf_to_html.html")
+#==============================
+# Crop PDF 
+#=============================
+import io
+from django.shortcuts import render
+from django.http import HttpResponse
+import fitz  # PyMuPDF
+
+def crop_pdf(request):
+    """
+    Upload PDF, crop via mouse or manual input, and download with _crop filename.
+    """
+    if request.method == "POST":
+        pdf_file = request.FILES.get("pdf")
+        if not pdf_file:
+            return HttpResponse("No PDF uploaded", status=400)
+
+        # Safely parse coordinates
+        try:
+            left = float(request.POST.get("left") or 0)
+            top = float(request.POST.get("top") or 0)
+            right = float(request.POST.get("right") or 0)
+            bottom = float(request.POST.get("bottom") or 0)
+        except ValueError:
+            return HttpResponse("Invalid crop values", status=400)
+
+        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        for page in doc:
+            rect = page.rect
+            crop_rect = fitz.Rect(left, top, right, bottom) & rect
+            page.set_cropbox(crop_rect)
+
+        buffer = doc.write()
+        response = HttpResponse(buffer, content_type="application/pdf")
+        filename = pdf_file.name.replace(".pdf","_crop.pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
+
+    return render(request, "crop_pdf.html")
